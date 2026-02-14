@@ -27,7 +27,7 @@ const RecorderBar = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
-  const animationIdRef = useRef<number>();
+  const animationIdRef = useRef<number | null>(null);
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
