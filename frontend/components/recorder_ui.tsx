@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, ChevronUp, ChevronDown, Trash2, Send, ArrowLeft, Printer, Save } from 'lucide-react';
+import { Mic, Square, ChevronUp, ChevronDown, Trash2, Send, ArrowLeft, Printer, Share2 } from 'lucide-react';
 import PatientCareReport from '@/components/patient_record/record_doc';
+import { createReport } from '@/services/report_create_api';
 
 type ViewState = 'recording' | 'report';
 
@@ -12,6 +13,9 @@ const RecorderBar = () => {
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [recordingTime, setRecordingTime] = useState(0);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+
+  const [loading, setLoading] = useState(false);
   
   // Local state for the report data
   const [reportData, setReportData] = useState<any>({
@@ -26,6 +30,7 @@ const RecorderBar = () => {
   const animationIdRef = useRef<number>();
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -121,13 +126,274 @@ const RecorderBar = () => {
     }
   };
 
-  const handleCreateReport = () => {
-    setReportData((prev: any) => ({
+  const handleCreateReport = async () => {
+    try {
+      setLoading(true);
+      const response = await createReport(transcript);
+
+      setReportData((prev: any) => ({
         ...prev,
-        chief_complaint: transcript,
-        date: new Date().toISOString().split('T')[0]
-    }));
-    setView('report');
+        ...response.patient_data,
+        abc_assessment: response.abc_assessment,
+        patient_signs: response.patient_signs,
+        date: new Date().toISOString().split("T")[0]
+      }));
+
+      setView("report");
+
+    } catch (err) {
+      console.error("Report creation failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePrintReport = async () => {
+    if (!reportRef.current) return;
+    
+    // Create a print-friendly window
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    // Get all stylesheets from the current document
+    const styles = Array.from(document.styleSheets)
+      .map(styleSheet => {
+        try {
+          return Array.from(styleSheet.cssRules)
+            .map(rule => rule.cssText)
+            .join('\n');
+        } catch (e) {
+          console.warn('Could not access stylesheet:', e);
+          return '';
+        }
+      })
+      .join('\n');
+
+    // Clone the report element
+    const reportClone = reportRef.current.cloneNode(true) as HTMLElement;
+    
+    // Get the computed height
+    const reportHeight = reportRef.current.scrollHeight;
+    const reportWidth = reportRef.current.scrollWidth;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Patient Care Report</title>
+          <meta charset="utf-8">
+          <style>
+            /* Reset and base styles */
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            html, body {
+              width: 100%;
+              height: 100%;
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+            }
+            
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              background: white;
+              display: flex;
+              justify-content: center;
+              align-items: flex-start;
+              padding: 10mm;
+            }
+            
+            /* Include all existing styles */
+            ${styles}
+            
+            /* Print-specific styles */
+            @media print {
+              html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+              }
+              
+              body {
+                padding: 0;
+              }
+              
+              @page {
+                size: A4 portrait;
+                margin: 0;
+              }
+              
+              /* Force content to fit on one page */
+              #report-container {
+                max-height: 297mm !important;
+                max-width: 210mm !important;
+                transform-origin: top left;
+                page-break-inside: avoid;
+                page-break-after: avoid;
+                page-break-before: avoid;
+              }
+              
+              /* Prevent page breaks */
+              * {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+                page-break-inside: avoid;
+              }
+              
+              /* Scale content if needed */
+              ${reportHeight > 1122 ? `
+                #report-container {
+                  transform: scale(${Math.min(1, 1122 / reportHeight)});
+                }
+              ` : ''}
+            }
+            
+            /* Container styling */
+            #report-container {
+              width: ${reportWidth}px;
+              max-width: 100%;
+              background: white;
+              position: relative;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="report-container"></div>
+        </body>
+      </html>
+    `);
+    
+    const container = printWindow.document.getElementById('report-container');
+    if (container) {
+      container.appendChild(reportClone);
+    }
+    
+    printWindow.document.close();
+    
+    // Wait for content and styles to load then print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    };
+  };
+
+  const formatObjectToString = (obj: any): string => {
+    if (!obj) return 'N/A';
+    if (typeof obj === 'string') return obj;
+    if (typeof obj === 'object') {
+      // If it's an array, join with commas
+      if (Array.isArray(obj)) {
+        return obj.map(item => formatObjectToString(item)).join(', ');
+      }
+      // If it's an object, format key-value pairs
+      return Object.entries(obj)
+        .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+        .map(([key, value]) => {
+          const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          const formattedValue = typeof value === 'object' ? formatObjectToString(value) : value;
+          return `${formattedKey}: ${formattedValue}`;
+        })
+        .join('\n');
+    }
+    return String(obj);
+  };
+
+  const handleShare = async (platform: string) => {
+    const patientName = reportData.patient_name || 'Patient';
+    const chiefComplaint = reportData.chief_complaint || 'N/A';
+    const date = reportData.date || new Date().toISOString().split('T')[0];
+    const vitals = reportData.vitals?.[0] || {};
+    const medications = reportData.medications || [];
+    
+    // Format assessment and patient signs properly
+    const assessment = formatObjectToString(reportData.abc_assessment);
+    const patientSigns = formatObjectToString(reportData.patient_signs);
+    
+    // Build vitals string
+    const vitalsList = [];
+    if (vitals.bp) vitalsList.push(`• Blood Pressure: ${vitals.bp}`);
+    if (vitals.pulse) vitalsList.push(`• Pulse: ${vitals.pulse}`);
+    if (vitals.resp) vitalsList.push(`• Respiratory Rate: ${vitals.resp}`);
+    if (vitals.temp) vitalsList.push(`• Temperature: ${vitals.temp}`);
+    if (vitals.spo2) vitalsList.push(`• SpO2: ${vitals.spo2}`);
+    if (vitals.gcs) vitalsList.push(`• GCS: ${vitals.gcs}`);
+    if (vitals.pupils) vitalsList.push(`• Pupils: ${vitals.pupils}`);
+    
+    const vitalsText = vitalsList.length > 0 ? vitalsList.join('\n') : 'Not recorded';
+    
+    // Build medications string
+    let medicationsText = 'None administered';
+    if (medications.length > 0 && medications[0].name) {
+      medicationsText = medications
+        .filter((med: any) => med.name)
+        .map((med: any, idx: number) => {
+          const parts = [`${idx + 1}. ${med.name}`];
+          if (med.dose) parts.push(med.dose);
+          if (med.route) parts.push(`via ${med.route}`);
+          if (med.time) parts.push(`at ${med.time}`);
+          return parts.join(' - ');
+        })
+        .join('\n');
+    }
+    
+    // Create detailed report summary
+    const reportSummary = `📋 PATIENT CARE REPORT
+
+👤 Patient: ${patientName}
+📅 Date: ${date}
+
+🏥 CHIEF COMPLAINT
+${chiefComplaint}
+
+💊 VITALS
+${vitalsText}
+
+💉 MEDICATIONS
+${medicationsText}
+
+${assessment !== 'N/A' ? `🔍 ASSESSMENT\n${assessment}\n` : ''}
+${patientSigns !== 'N/A' ? `📝 PATIENT SIGNS\n${patientSigns}\n` : ''}
+---
+Generated via Medical Voice Recorder`;
+
+    const encodedText = encodeURIComponent(reportSummary);
+
+    const shareUrls: { [key: string]: string } = {
+      whatsapp: `https://wa.me/?text=${encodedText}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodedText}`,
+      telegram: `https://t.me/share/url?text=${encodedText}`,
+      email: `mailto:?subject=${encodeURIComponent('Patient Care Report - ' + patientName)}&body=${encodedText}`,
+    };
+
+    if (platform === 'copy') {
+      try {
+        await navigator.clipboard.writeText(reportSummary);
+        alert('✅ Report summary copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = reportSummary;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('✅ Report summary copied to clipboard!');
+      }
+    } else if (shareUrls[platform]) {
+      window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+    }
+
+    setShowShareMenu(false);
   };
 
   return (
@@ -197,12 +463,22 @@ const RecorderBar = () => {
               >
                 <Trash2 size={16} /> Discard
               </button>
-              <button 
+              <button
                 onClick={handleCreateReport}
-                disabled={!transcript && !isRecording}
+                disabled={(!transcript && !isRecording) || loading}
                 className="flex-[2] py-4 rounded-2xl bg-blue-600 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Send size={16} /> Create Report
+                {loading ? (
+                  <>
+                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    Create Report
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -211,48 +487,100 @@ const RecorderBar = () => {
           <div className="flex-1 flex flex-col overflow-hidden bg-zinc-900/40">
             {/* Sub-header Actions */}
             <div className="px-6 py-3 bg-zinc-950/80 flex justify-between items-center border-b border-white/5">
-                <button 
-                    onClick={() => setView('recording')}
-                    className="text-xs font-bold text-zinc-500 flex items-center gap-2 hover:text-blue-400 transition-colors uppercase tracking-widest"
-                >
-                    <ArrowLeft size={14} /> Back
-                </button>
-                <button 
-                    onClick={() => window.print()}
+              <button 
+                onClick={() => setView('recording')}
+                className="text-xs font-bold text-zinc-500 flex items-center gap-2 hover:text-blue-400 transition-colors uppercase tracking-widest"
+              >
+                <ArrowLeft size={14} /> Back
+              </button>
+              <div className="flex gap-2">
+                {/* Share Button with Dropdown */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowShareMenu(!showShareMenu)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg text-xs font-semibold text-zinc-300 hover:bg-white/10 transition-colors border border-white/5"
+                  >
+                    <Share2 size={14} /> Share
+                  </button>
+                  
+                  {/* Share Menu Dropdown */}
+                  {showShareMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-white/10 rounded-lg shadow-xl overflow-hidden z-10">
+                      <div className="px-4 py-2 border-b border-white/5">
+                        <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Share Report</p>
+                      </div>
+                      <button
+                        onClick={() => handleShare('whatsapp')}
+                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-300 hover:bg-white/5 transition-colors flex items-center gap-3"
+                      >
+                        <span className="text-green-500">💬</span> WhatsApp
+                      </button>
+                      <button
+                        onClick={() => handleShare('twitter')}
+                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-300 hover:bg-white/5 transition-colors flex items-center gap-3"
+                      >
+                        <span className="text-blue-400">🐦</span> Twitter
+                      </button>
+                      <button
+                        onClick={() => handleShare('telegram')}
+                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-300 hover:bg-white/5 transition-colors flex items-center gap-3"
+                      >
+                        <span className="text-blue-500">✈️</span> Telegram
+                      </button>
+                      <button
+                        onClick={() => handleShare('email')}
+                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-300 hover:bg-white/5 transition-colors flex items-center gap-3"
+                      >
+                        <span className="text-red-500">📧</span> Email
+                      </button>
+                      <div className="border-t border-white/5"></div>
+                      <button
+                        onClick={() => handleShare('copy')}
+                        className="w-full px-4 py-2.5 text-left text-sm text-zinc-300 hover:bg-white/5 transition-colors flex items-center gap-3"
+                      >
+                        <span>📋</span> Copy Summary
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button 
+                  onClick={handlePrintReport}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 rounded-lg text-xs font-semibold text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20"
                 >
-                    <Printer size={14} /> Print Report
+                  <Printer size={14} /> Print Report
                 </button>
+              </div>
             </div>
             
-            {/* THE FIX: Horizontal and Vertical Scroll Area */}
+            {/* Scrollable Report Area */}
             <div className="flex-1 overflow-auto p-4 md:p-10 custom-scrollbar-styling">
-                {/* min-w-fit prevents the flex child from shrinking below its natural size */}
-                <div className="min-w-fit flex justify-center pb-10">
-                    {/* Fixed width container ensures the report looks like a standard A4/Letter page */}
-                    <div className="bg-white shadow-[0_0_50px_rgba(0,0,0,0.3)] rounded-sm origin-top transition-transform duration-300" 
-                         style={{ width: '800px', minWidth: '800px' }}>
-                        <PatientCareReport 
-                            data={reportData} 
-                            editable={true} 
-                            useHandwriting={true} 
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Sticky Footer */}
-            <div className="p-4 bg-zinc-950 border-t border-white/10 flex gap-3">
-                <button 
-                    onClick={() => setIsExpanded(false)}
-                    className="flex-1 py-4 rounded-2xl bg-white text-black text-sm font-bold flex items-center justify-center gap-2 hover:bg-zinc-200 transition-all shadow-xl"
+              <div className="min-w-fit flex justify-center pb-10">
+                <div 
+                  ref={reportRef}
+                  data-report-container
+                  className="bg-white shadow-[0_0_50px_rgba(0,0,0,0.3)] rounded-sm origin-top transition-transform duration-300" 
+                  style={{ width: '800px', minWidth: '800px' }}
                 >
-                    <Save size={18} /> Save & Finalize
-                </button>
+                  <PatientCareReport 
+                    data={reportData} 
+                    editable={true} 
+                    useHandwriting={true} 
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Click outside to close share menu */}
+      {showShareMenu && (
+        <div 
+          className="fixed inset-0 z-0" 
+          onClick={() => setShowShareMenu(false)}
+        />
+      )}
 
       <style jsx>{`
         .custom-scrollbar-styling::-webkit-scrollbar {

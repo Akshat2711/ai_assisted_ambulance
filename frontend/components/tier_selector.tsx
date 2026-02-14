@@ -24,10 +24,26 @@ const tiers = [
 
 const hospitals = [
   { id: 1, name: "SIVA Hospital 24 x 7", type: "primary", address: "Chengalpattu", lat: 12.6815, lng: 79.9825, phone: "04427420008" },
+
   { id: 2, name: "Deepam Medfirst Hospital", type: "secondary", address: "Chengalpattu", lat: 12.6930, lng: 79.9770, phone: "04427423000" },
+
+  { id: 3, name: "Sai Hospital (Sai Fertility Centre & Hospital)", type: "secondary", address: "Chengalpattu", lat: 12.6902, lng: 79.9754, phone: "" },
+
+  { id: 4, name: "Parvathy Hospital", type: "secondary", address: "Chengalpattu", lat: 12.6951, lng: 79.9813, phone: "" },
+
+  { id: 5, name: "Jeevan Sumyuktha Hospitals Pvt Ltd", type: "secondary", address: "Chengalpattu", lat: 12.6888, lng: 79.9790, phone: "" },
+
+  { id: 6, name: "Raj Hospital (24 hrs Ortho, Trauma & General)", type: "secondary", address: "Chengalpattu", lat: 12.6867, lng: 79.9832, phone: "" },
+
+  { id: 7, name: "Sree Renga Hospital", type: "secondary", address: "Chengalpattu", lat: 12.6945, lng: 79.9786, phone: "" },
+
   { id: 8, name: "Chengalpattu Medical College & Hospital", type: "tertiary", address: "GST Road", lat: 12.6841, lng: 79.9798, phone: "04427426666" },
-  { id: 9, name: "SRM Medical College Hospital", type: "tertiary", address: "Potheri", lat: 12.8231, lng: 80.0442, phone: "04427417000" },
-  // ... rest of your hospital data
+
+  { id: 9, name: "SRM Medical College Hospital & Research Centre", type: "tertiary", address: "Potheri", lat: 12.8231, lng: 80.0442, phone: "04427417000" },
+
+  { id: 10, name: "Rajalakshmi Health City (Rajalakshmi Medical College Hospital)", type: "tertiary", address: "Chengalpattu region", lat: 12.8123, lng: 80.0301, phone: "" },
+
+  { id: 11, name: "Medway JSP Hospitals", type: "tertiary", address: "Chengalpattu region", lat: 12.7065, lng: 79.9874, phone: "" }
 ];
 
 const TierSelector = () => {
@@ -66,22 +82,32 @@ const TierSelector = () => {
   }, [userLoc, selectedLevel, speed]);
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center p-4 bg-zinc-950 text-white overflow-hidden">
+    <div className="w-full min-h-screen flex items-center justify-center p-4 bg-zinc-950 text-white overflow-hidden mt-[2vh]">
       <div className="relative w-full max-w-2xl h-[85vh] overflow-hidden border border-white/10 rounded-[2.5rem] bg-zinc-900/20 shadow-2xl">
         
         {/* VIEW 1: TIER SELECTION */}
         <div className={`absolute inset-0 flex flex-col p-6 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] 
           ${selectedLevel ? '-translate-x-full opacity-0' : 'translate-x-0 opacity-100'}`}>
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Select Facility Tier</h1>
-              <p className="text-zinc-500 text-sm">Emergency Intelligence Protocol</p>
-            </div>
-            <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-2xl flex items-center gap-2">
-              <Gauge size={14} className="text-blue-400" />
-              <span className="text-[10px] font-mono text-zinc-300">{speed.toFixed(0)} KM/H</span>
-            </div>
-          </div>
+        <div className="flex gap-3 items-start mb-8">
+
+
+        {/* Hospital tier bubble */}
+        <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-2xl">
+          <p className="text-zinc-500 text-sm">
+            Select Hospital tier
+          </p>
+        </div>
+
+        {/* Speed bubble */}
+        <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-2xl flex items-center gap-2">
+          <Gauge size={14} className="text-blue-400" />
+          <span className="text-[10px] font-mono text-zinc-300">
+            {speed.toFixed(0)} KM/H
+          </span>
+        </div>
+
+      </div>
+
 
           <div className="flex-1 flex flex-col gap-3 relative">
             {tiers.map((tier) => (

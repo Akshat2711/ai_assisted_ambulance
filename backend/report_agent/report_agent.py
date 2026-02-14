@@ -33,9 +33,20 @@ class report_agent:
 
 if __name__ == "__main__":
     report_agent.agent(
-        """45 year old male John Doe.
-        Complaining chest pain and shortness of breath.
-        BP 140/90, pulse 88.
-        Given aspirin 325 mg orally.
-        Transported to hospital ED."""
+        """Male approx 32 years, RTA bike skid around 14:20. Patient conscious but incoherent initially, later coherent. Complains of left leg pain 7/10. No known medical history.
+
+Airway patent. O2 via NRB mask started. Radial pulse present.
+Skin moist/clammy, color pale. Respirations wet. Pupils equal reactive.
+
+Vitals:
+14:25 — BP 140/90, Pulse 102 rapid, RR 22, SpO2 94%, BGL 110.
+14:40 — BP 136/88, Pulse 96, RR 20, SpO2 96%.
+
+LOC for about 2 minutes reported by bystander.
+
+Medication:
+14:30 — Inj Diclofenac IM, pain reduced.
+
+Transferred ALS ground to City Hospital ED.
+EMS provider signed 14:55."""
     )

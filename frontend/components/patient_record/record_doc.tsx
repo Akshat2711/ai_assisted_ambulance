@@ -1,7 +1,17 @@
-import React from 'react';
+import { useState } from 'react';
 import InteractiveBodyDiagram from './body_diagram';
+import PatientSignsTable from './patient_sign_table';
+import ABCTable from './abc_table';
+//interfaces
+import { ABCAssessment } from './abc_table';
+import { PatientSigns } from './patient_sign_table';
+//service file for report create
+import { createReport } from '@/services/report_create_api';
 
-interface PatientData {
+
+
+
+export interface PatientData {
   patient_name?: string;
   date?: string;
   weight?: string;
@@ -18,8 +28,7 @@ interface PatientData {
   chief_complaint?: string;
   noi_moi?: string;
   ss?: string;
-  
-  // Vitals data
+
   vitals?: Array<{
     time?: string;
     loc?: string;
@@ -30,21 +39,18 @@ interface PatientData {
     bgl?: string;
     pain?: string;
   }>;
-  
-  // Consciousness
+
   loc_no?: boolean;
   loc_yes?: boolean;
   loc_minutes?: string;
-  
-  // Medications
+
   medications?: Array<{
     time?: string;
     medication?: string;
     route?: string;
     response?: string;
   }>;
-  
-  // Signatures
+
   patient_signature?: string;
   patient_sig_date?: string;
   witness_signature?: string;
@@ -53,8 +59,7 @@ interface PatientData {
   receiving_date?: string;
   ems_provider_signature?: string;
   ems_provider_date?: string;
-  
-  // Transfer of Care
+
   hospital_ed?: boolean;
   als_medical?: boolean;
   als_ground?: boolean;
@@ -62,13 +67,20 @@ interface PatientData {
   als_air?: boolean;
   other_transfer?: boolean;
   other_specify?: string;
+
+  /* NEW — clinical structured sections */
+  abc_assessment?: ABCAssessment;
+  patient_signs?: PatientSigns;
 }
+
 
 interface PatientCareReportProps {
   data?: PatientData;
   editable?: boolean;
   useHandwriting?: boolean;
 }
+
+
 
 const PatientCareReport: React.FC<PatientCareReportProps> = ({ 
   data = {}, 
@@ -79,459 +91,41 @@ const PatientCareReport: React.FC<PatientCareReportProps> = ({
   const vitals = data.vitals || [{}, {}, {}, {}];
   const medications = data.medications || [{}, {}, {}];
 
+
+  const [assessment, setAssessment] = useState<PatientSigns>(
+    data?.patient_signs ?? {
+      speech: null,
+      skin: null,
+      color: null,
+      respiratory: null,
+      pulse: null,
+      pupils: null
+    }
+  );
+
+  const [abcData, setAbcData] = useState<ABCAssessment>(
+    data?.abc_assessment ?? {
+      airway: null,
+      breathing: null,
+      circulation: null,
+      gcsEye: null,
+      gcsVerbal: null,
+      gcsMotor: null
+    }
+  );
+
+
   return (
     <>
       <style jsx>{`
-        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Kalam:wght@300;400;700&family=Patrick+Hand&family=Permanent+Marker&display=swap');
-        
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        
-        .form-container {
+      @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Kalam:wght@300;400;700&family=Patrick+Hand&family=Permanent+Marker&display=swap');
+      .form-container {
           max-width: 900px;
           margin: 0 auto;
           background: white;
           border: 3px solid #000;
-          font-family: ${useHandwriting ? "'Kalam', cursive" : 'Arial, sans-serif'};
+          font-family: 'Arial, sans-serif';
           color:black;
-        }
-        
-        .handwriting-input {
-          font-family: 'Kalam', cursive !important;
-          font-weight: 400;
-        }
-        
-        .handwriting-signature {
-          font-family: 'Caveat', cursive !important;
-          font-size: 16px !important;
-          font-weight: 700;
-        }
-        
-        .header {
-          display: grid;
-          grid-template-columns: 100px 1fr 100px;
-          border-bottom: 3px solid #000;
-          align-items: center;
-        }
-        
-        .logo {
-          border-right: 3px solid #000;
-          padding: 20px;
-          text-align: center;
-          font-size: 60px;
-        }
-        
-        .title {
-          text-align: center;
-          padding: 10px;
-        }
-        
-        .title h1 {
-          font-size: 18px;
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-        
-        .title p {
-          font-size: 11px;
-        }
-        
-        .logo-right {
-          border-left: 3px solid #000;
-          padding: 20px;
-          text-align: center;
-          font-size: 60px;
-        }
-        
-        .patient-info {
-          display: grid;
-          grid-template-columns: 3fr 1fr 1fr;
-          border-bottom: 2px solid #000;
-        }
-        
-        .field {
-          border-right: 2px solid #000;
-          padding: 3px 8px;
-          font-size: 11px;
-          display: flex;
-          align-items: center;
-        }
-        
-        .field:last-child {
-          border-right: none;
-        }
-        
-        .field label {
-          font-weight: bold;
-          margin-right: 5px;
-          white-space: nowrap;
-        }
-        
-        .field input[type="text"],
-        .field input[type="date"],
-        .field input[type="number"] {
-          border: none;
-          flex: 1;
-          padding: 2px;
-          font-size: 11px;
-          outline: none;
-          background: transparent;
-        }
-        input{
-        color:blue;}
-        
-        .incident-row {
-          display: grid;
-          grid-template-columns: 3fr 1fr 1.2fr;
-          border-bottom: 2px solid #000;
-        }
-        
-        .priority-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr 1fr;
-          border-bottom: 2px solid #000;
-        }
-        
-        .priority-box {
-          border-right: 2px solid #000;
-          padding: 3px 8px;
-          font-size: 11px;
-          display: flex;
-          align-items: center;
-        }
-        
-        .priority-box:last-child {
-          border-right: none;
-        }
-        
-        .priority-box input[type="checkbox"] {
-          margin-right: 5px;
-        }
-        
-        .priority-box label {
-          margin: 0;
-        }
-        
-        .category-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1.5fr;
-          border-bottom: 2px solid #000;
-        }
-        
-        .category-box {
-          border-right: 2px solid #000;
-          padding: 3px 8px;
-          font-size: 11px;
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        
-        .category-box:last-child {
-          border-right: none;
-        }
-        
-        .category-box label {
-          display: flex;
-          align-items: center;
-          margin: 0;
-        }
-        
-        .category-box input[type="checkbox"] {
-          margin-right: 5px;
-        }
-        
-        .complaint-row {
-          border-bottom: 2px solid #000;
-          padding: 3px 8px;
-          display: flex;
-          align-items: center;
-        }
-        
-        .complaint-row label {
-          font-weight: bold;
-          font-size: 11px;
-          margin-right: 10px;
-          white-space: nowrap;
-        }
-        
-        .complaint-row input[type="text"] {
-          flex: 1;
-          border: none;
-          padding: 2px;
-          font-size: 11px;
-          outline: none;
-          background: transparent;
-        }
-        
-        .noi-row {
-          border-bottom: 2px solid #000;
-          padding: 3px 8px;
-          display: flex;
-          align-items: center;
-        }
-        
-        .noi-row label {
-          font-weight: bold;
-          font-size: 11px;
-          margin-right: 10px;
-          white-space: nowrap;
-        }
-        
-        .noi-row input[type="text"] {
-          flex: 1;
-          border: none;
-          padding: 2px;
-          font-size: 11px;
-          outline: none;
-          background: transparent;
-        }
-        
-        .assessment-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 10px;
-        }
-        
-        .assessment-table th,
-        .assessment-table td {
-          border: 1px solid #000;
-          padding: 2px 4px;
-          text-align: center;
-          vertical-align: middle;
-        }
-        
-        .assessment-table th {
-          background: #f0f0f0;
-          font-weight: bold;
-          font-size: 10px;
-        }
-        
-        .assessment-table .label-col {
-          text-align: left;
-          font-weight: normal;
-          padding-left: 6px;
-        }
-        
-        .assessment-table input[type="checkbox"] {
-          margin: 0 2px;
-        }
-        
-        .vitals-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 10px;
-          border-top: 2px solid #000;
-        }
-        
-        .vitals-table th,
-        .vitals-table td {
-          border: 1px solid #000;
-          padding: 6px 4px;
-          text-align: center;
-        }
-        
-        .vitals-table th {
-          background: #f0f0f0;
-          font-weight: bold;
-          font-size: 10px;
-        }
-        
-        .vitals-table input[type="text"] {
-          width: 95%;
-          border: none;
-          text-align: center;
-          font-size: 10px;
-          outline: none;
-          background: transparent;
-        }
-        
-        .bottom-section {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          border-top: 2px solid #000;
-        }
-        
-        .body-diagram {
-          border-right: 2px solid #000;
-          padding: 20px;
-          text-align: center;
-        }
-        
-        .body-diagram svg {
-          max-width: 100%;
-          height: auto;
-        }
-        
-        .right-section {
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .consciousness-box {
-          border-bottom: 2px solid #000;
-          padding: 5px 8px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 10px;
-        }
-        
-        .consciousness-box label {
-          font-weight: bold;
-          margin-right: 10px;
-        }
-        
-        .medications-table {
-          border-bottom: 2px solid #000;
-        }
-        
-        .medications-table table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 10px;
-        }
-        
-        .medications-table th,
-        .medications-table td {
-          border: 1px solid #000;
-          padding: 4px;
-          text-align: center;
-        }
-        
-        .medications-table th {
-          background: #f0f0f0;
-          font-weight: bold;
-        }
-        
-        .medications-table input[type="text"] {
-          width: 95%;
-          border: none;
-          font-size: 10px;
-          outline: none;
-          background: transparent;
-        }
-        
-        .waiver-section {
-          border-bottom: 2px solid #000;
-          padding: 8px;
-        }
-        
-        .waiver-section h3 {
-          text-align: center;
-          font-size: 11px;
-          margin-bottom: 6px;
-          text-decoration: underline;
-          font-weight: bold;
-        }
-        
-        .waiver-section p {
-          font-size: 8px;
-          line-height: 1.3;
-          margin-bottom: 8px;
-          text-align: justify;
-        }
-        
-        .signature-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-          margin-top: 8px;
-        }
-        
-        .signature-field {
-          font-size: 9px;
-        }
-        
-        .signature-field label {
-          font-weight: bold;
-          display: block;
-          margin-bottom: 2px;
-        }
-        
-        .signature-field input[type="text"],
-        .signature-field input[type="date"] {
-          width: 100%;
-          border: none;
-          border-bottom: 1px solid #000;
-          padding: 1px;
-          font-size: 9px;
-          outline: none;
-          background: transparent;
-        }
-        
-        .transfer-section {
-          padding: 8px;
-        }
-        
-        .transfer-section h3 {
-          text-align: center;
-          font-size: 11px;
-          margin-bottom: 6px;
-          text-decoration: underline;
-          font-weight: bold;
-        }
-        
-        .transfer-options {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 6px;
-          margin-bottom: 8px;
-          font-size: 10px;
-        }
-        
-        .transfer-options label {
-          display: flex;
-          align-items: center;
-        }
-        
-        .transfer-options input[type="checkbox"] {
-          margin-right: 5px;
-        }
-        
-        .transfer-options input[type="text"] {
-          border: none;
-          border-bottom: 1px solid #999;
-          font-size: 10px;
-          outline: none;
-          background: transparent;
-        }
-        
-        .ems-signatures {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 8px;
-          margin-top: 8px;
-        }
-        
-        .ems-signature {
-          font-size: 9px;
-        }
-        
-        .ems-signature label {
-          font-weight: bold;
-          display: block;
-          margin-bottom: 2px;
-        }
-        
-        .ems-signature input[type="text"],
-        .ems-signature input[type="date"] {
-          width: 100%;
-          border: none;
-          border-bottom: 1px solid #000;
-          padding: 1px;
-          font-size: 9px;
-          outline: none;
-          background: transparent;
-        }
-        
-        @media print {
-          .form-container {
-            border: 2px solid #000;
-          }
         }
       `}</style>
 
@@ -766,99 +360,23 @@ const PatientCareReport: React.FC<PatientCareReportProps> = ({
         </div>
         
         {/* Assessment Table */}
-        <table className="assessment-table">
-          <thead>
-            <tr>
-              <th rowSpan={2} style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', width: '20px', padding: '4px 2px' }}>
-                A<br />B<br />C
-              </th>
-              <th>Patent</th>
-              <th>NPA</th>
-              <th>OPA</th>
-              <th>Advanced Airway</th>
-              <th>Glasgow</th>
-              <th>Eye:</th>
-              <th>Verbal:</th>
-              <th>Motor:</th>
-              <th>Total</th>
-            </tr>
-            <tr>
-              <th>O2</th>
-              <th>Canula</th>
-              <th>NRB</th>
-              <th>BVM</th>
-              <th>Coma<br />Scale:</th>
-              <th>4 3 2 1</th>
-              <th>5 4 3 2 1</th>
-              <th>6 5 4 3 2 1</th>
-              <th>(E+V+M):</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td rowSpan={5} style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', padding: '4px 2px', fontWeight: 'bold' }}>
-                Patient Assessment Findings
-              </td>
-              <td className="label-col">Radial</td>
-              <td className="label-col">Carotid</td>
-              <td className="label-col">Skin Moisture</td>
-              <td className="label-col">Color</td>
-              <td className="label-col">Respiratory</td>
-              <td colSpan={2} className="label-col">Pulse</td>
-              <td colSpan={2} className="label-col">Pupils</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td className="label-col">Speech</td>
-              <td></td>
-              <td className="label-col">Normal</td>
-              <td className="label-col">Normal</td>
-              <td className="label-col">Clear</td>
-              <td colSpan={2} className="label-col">Normal</td>
-              <td colSpan={2} className="label-col">Equal</td>
-              <td>L / R</td>
-            </tr>
-            <tr>
-              <td className="label-col">Coherent</td>
-              <td></td>
-              <td className="label-col">Dry</td>
-              <td className="label-col">Pale</td>
-              <td className="label-col">Wet</td>
-              <td>L / R</td>
-              <td className="label-col">Rapid</td>
-              <td colSpan={2} className="label-col">Dilated</td>
-              <td>L / R</td>
-            </tr>
-            <tr>
-              <td className="label-col">Incoherent</td>
-              <td></td>
-              <td className="label-col">Moist / Clammy</td>
-              <td className="label-col">Bluish</td>
-              <td className="label-col">Decreased</td>
-              <td>L / R</td>
-              <td className="label-col">Weak/Slow</td>
-              <td colSpan={2} className="label-col">Equal</td>
-              <td>L / R</td>
-            </tr>
-            <tr>
-              <td className="label-col">*Slurred*</td>
-              <td className="label-col">Silent</td>
-              <td className="label-col">Profuse Sweating</td>
-              <td className="label-col">Flushed / Red</td>
-              <td className="label-col">Absent</td>
-              <td></td>
-              <td className="label-col">Absent</td>
-              <td colSpan={2} className="label-col">Unequal</td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
+      <div className="w-full max-w-4xl bg-white">
+            
+        {/* SECTION 1: ABC & GCS */}
+        <ABCTable values={abcData} onChange={setAbcData} />
+
+        {/* SECTION 2: PATIENT SIGNS */}
+        <PatientSignsTable
+          signs={assessment} 
+          onChange={(newData) => setAssessment(newData)} 
+        />
+      </div>
         
         {/* Vitals Table */}
         <table className="vitals-table">
           <thead>
             <tr>
-              <th colSpan={8} style={{ textAlign: 'left', padding: '3px 8px', fontSize: '11px', background: 'white', borderBottom: '1px solid #000' }}>
+              <th colSpan={8} style={{ textAlign: 'left', padding: '3px 8px', fontSize: '11px', background: '#f0f0f0', borderBottom: '1px solid #000' }}>
                 Vitals
               </th>
             </tr>
@@ -1112,9 +630,17 @@ const PatientCareReport: React.FC<PatientCareReportProps> = ({
                 <label>
                   <input 
                     type="checkbox" 
+                    name="als_ground"
+                    defaultChecked={data.als_ground}
+                    disabled={editable}
+                  /> ALS - Ground
+                </label>
+                <label>
+                  <input 
+                    type="checkbox" 
                     name="hospital_ed"
                     defaultChecked={data.hospital_ed}
-                    disabled={!editable}
+                    disabled={editable}
                   /> Hospital ED
                 </label>
                 <label>
@@ -1122,23 +648,15 @@ const PatientCareReport: React.FC<PatientCareReportProps> = ({
                     type="checkbox" 
                     name="als_medical"
                     defaultChecked={data.als_medical}
-                    disabled={!editable}
+                    disabled={editable}
                   /> ALS - Medical
-                </label>
-                <label>
-                  <input 
-                    type="checkbox" 
-                    name="als_ground"
-                    defaultChecked={data.als_ground}
-                    disabled={!editable}
-                  /> ALS - Ground
                 </label>
                 <label>
                   <input 
                     type="checkbox" 
                     name="bls"
                     defaultChecked={data.bls}
-                    disabled={!editable}
+                    disabled={editable}
                   /> BLS
                 </label>
                 <label>
@@ -1146,7 +664,7 @@ const PatientCareReport: React.FC<PatientCareReportProps> = ({
                     type="checkbox" 
                     name="als_air"
                     defaultChecked={data.als_air}
-                    disabled={!editable}
+                    disabled={editable}
                   /> ALS - Air
                 </label>
                 <label>
@@ -1154,13 +672,13 @@ const PatientCareReport: React.FC<PatientCareReportProps> = ({
                     type="checkbox" 
                     name="other_transfer"
                     defaultChecked={data.other_transfer}
-                    disabled={!editable}
+                    disabled={editable}
                   /> Other (Specify): 
                   <input 
                     type="text" 
                     name="other_specify"
                     defaultValue={data.other_specify}
-                    readOnly={!editable}
+                    readOnly={editable}
                     className={useHandwriting ? 'handwriting-input' : ''}
                     style={{ width: '100px', border: 'none', borderBottom: '1px solid #999', marginLeft: '5px', outline: 'none', background: 'transparent' }}
                   />
