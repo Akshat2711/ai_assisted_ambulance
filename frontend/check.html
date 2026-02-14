@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Care Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .form-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border: 3px solid #000;
+        }
+        
+        .header {
+            display: grid;
+            grid-template-columns: 100px 1fr 100px;
+            border-bottom: 3px solid #000;
+            align-items: center;
+        }
+        
+        .logo {
+            border-right: 3px solid #000;
+            padding: 20px;
+            text-align: center;
+            font-size: 60px;
+        }
+        
+        .title {
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .title h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .title p {
+            font-size: 11px;
+        }
+        
+        .logo-right {
+            border-left: 3px solid #000;
+            padding: 20px;
+            text-align: center;
+            font-size: 60px;
+        }
+        
+        .patient-info {
+            display: grid;
+            grid-template-columns: 3fr 1fr 1fr;
+            border-bottom: 2px solid #000;
+        }
+        
+        .field {
+            border-right: 2px solid #000;
+            padding: 3px 8px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .field:last-child {
+            border-right: none;
+        }
+        
+        .field label {
+            font-weight: bold;
+            margin-right: 5px;
+            white-space: nowrap;
+        }
+        
+        .field input[type="text"],
+        .field input[type="date"],
+        .field input[type="number"] {
+            border: none;
+            flex: 1;
+            padding: 2px;
+            font-size: 11px;
+            outline: none;
+        }
+        
+        .incident-row {
+            display: grid;
+            grid-template-columns: 3fr 1fr 1.2fr;
+            border-bottom: 2px solid #000;
+        }
+        
+        .priority-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            border-bottom: 2px solid #000;
+        }
+        
+        .priority-box {
+            border-right: 2px solid #000;
+            padding: 3px 8px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .priority-box:last-child {
+            border-right: none;
+        }
+        
+        .priority-box input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        
+        .priority-box label {
+            margin: 0;
+        }
+        
+        .category-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr;
+            border-bottom: 2px solid #000;
+        }
+        
+        .category-box {
+            border-right: 2px solid #000;
+            padding: 3px 8px;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .category-box:last-child {
+            border-right: none;
+        }
+        
+        .category-box label {
+            display: flex;
+            align-items: center;
+            margin: 0;
+        }
+        
+        .category-box input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        
+        .complaint-row {
+            border-bottom: 2px solid #000;
+            padding: 3px 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .complaint-row label {
+            font-weight: bold;
+            font-size: 11px;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+        
+        .complaint-row input[type="text"] {
+            flex: 1;
+            border: none;
+            padding: 2px;
+            font-size: 11px;
+            outline: none;
+        }
+        
+        .noi-row {
+            border-bottom: 2px solid #000;
+            padding: 3px 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .noi-row label {
+            font-weight: bold;
+            font-size: 11px;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+        
+        .noi-row input[type="text"] {
+            flex: 1;
+            border: none;
+            padding: 2px;
+            font-size: 11px;
+            outline: none;
+        }
+        
+        .assessment-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+        
+        .assessment-table th,
+        .assessment-table td {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .assessment-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .assessment-table .label-col {
+            text-align: left;
+            font-weight: normal;
+            padding-left: 6px;
+        }
+        
+        .assessment-table .section-label {
+            font-weight: bold;
+            writing-mode: vertical-lr;
+            text-align: center;
+            padding: 4px 2px;
+        }
+        
+        .assessment-table input[type="checkbox"] {
+            margin: 0 2px;
+        }
+        
+        .vitals-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            border-top: 2px solid #000;
+        }
+        
+        .vitals-table th,
+        .vitals-table td {
+            border: 1px solid #000;
+            padding: 6px 4px;
+            text-align: center;
+        }
+        
+        .vitals-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .vitals-table input[type="text"] {
+            width: 95%;
+            border: none;
+            text-align: center;
+            font-size: 10px;
+            outline: none;
+            background: transparent;
+        }
+        
+        .bottom-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 2px solid #000;
+        }
+        
+        .body-diagram {
+            border-right: 2px solid #000;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .body-diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .right-section {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .consciousness-box {
+            border-bottom: 2px solid #000;
+            padding: 5px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 10px;
+        }
+        
+        .consciousness-box label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .medications-table {
+            border-bottom: 2px solid #000;
+        }
+        
+        .medications-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+        
+        .medications-table th,
+        .medications-table td {
+            border: 1px solid #000;
+            padding: 4px;
+            text-align: center;
+        }
+        
+        .medications-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        
+        .medications-table input[type="text"] {
+            width: 95%;
+            border: none;
+            font-size: 10px;
+            outline: none;
+            background: transparent;
+        }
+        
+        .waiver-section {
+            border-bottom: 2px solid #000;
+            padding: 8px;
+        }
+        
+        .waiver-section h3 {
+            text-align: center;
+            font-size: 11px;
+            margin-bottom: 6px;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        
+        .waiver-section p {
+            font-size: 8px;
+            line-height: 1.3;
+            margin-bottom: 8px;
+            text-align: justify;
+        }
+        
+        .signature-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .signature-field {
+            font-size: 9px;
+        }
+        
+        .signature-field label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .signature-field input[type="text"],
+        .signature-field input[type="date"] {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #000;
+            padding: 1px;
+            font-size: 9px;
+            outline: none;
+        }
+        
+        .transfer-section {
+            padding: 8px;
+        }
+        
+        .transfer-section h3 {
+            text-align: center;
+            font-size: 11px;
+            margin-bottom: 6px;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        
+        .transfer-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+            font-size: 10px;
+        }
+        
+        .transfer-options label {
+            display: flex;
+            align-items: center;
+        }
+        
+        .transfer-options input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        
+        .transfer-options input[type="text"] {
+            border: none;
+            border-bottom: 1px solid #999;
+            font-size: 10px;
+            outline: none;
+        }
+        
+        .ems-signatures {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .ems-signature {
+            font-size: 9px;
+        }
+        
+        .ems-signature label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .ems-signature input[type="text"],
+        .ems-signature input[type="date"] {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid #000;
+            padding: 1px;
+            font-size: 9px;
+            outline: none;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+            
+            .form-container {
+                border: 2px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">✷</div>
+            <div class="title">
+                <h1>Patient Care Report</h1>
+                <p>Refer also to IBPS (Pink Section) and Medical Incident Report (B-Line)*</p>
+            </div>
+            <div class="logo-right">✷</div>
+        </div>
+        
+        <!-- Patient Info Row 1 -->
+        <div class="patient-info">
+            <div class="field">
+                <label>Patient Name:</label>
+                <input type="text" name="patient_name">
+            </div>
+            <div class="field">
+                <label>Date:</label>
+                <input type="date" name="date">
+            </div>
+            <div class="field">
+                <label>Weight:</label>
+                <input type="text" name="weight">
+            </div>
+        </div>
+        
+        <!-- Incident Row -->
+        <div class="incident-row">
+            <div class="field">
+                <label>*Incident Name / Number:</label>
+                <input type="text" name="incident">
+            </div>
+            <div class="field">
+                <label>Age:</label>
+                <input type="text" name="age">
+            </div>
+            <div class="field" style="display: flex; gap: 15px;">
+                <label style="display: flex; align-items: center;">
+                    <input type="checkbox" name="gender" value="male" style="margin-right: 5px;"> Male
+                </label>
+                <label style="display: flex; align-items: center;">
+                    <input type="checkbox" name="gender" value="female" style="margin-right: 5px;"> Female
+                </label>
+            </div>
+        </div>
+        
+        <!-- Priority Row -->
+        <div class="priority-row">
+            <div class="priority-box">
+                <label>*Evac Priority:</label>
+            </div>
+            <div class="priority-box">
+                <input type="checkbox" name="priority_red" id="priority_red">
+                <label for="priority_red">Red / Priority 1</label>
+            </div>
+            <div class="priority-box">
+                <input type="checkbox" name="priority_yellow" id="priority_yellow">
+                <label for="priority_yellow">Yellow / Priority 2</label>
+            </div>
+            <div class="priority-box">
+                <input type="checkbox" name="priority_green" id="priority_green">
+                <label for="priority_green">Green / Priority 3</label>
+            </div>
+        </div>
+        
+        <!-- Category Row -->
+        <div class="category-row">
+            <div class="category-box">
+                <label><input type="checkbox" name="medical" id="medical"> Medical</label>
+                <label><input type="checkbox" name="trauma" id="trauma"> Trauma</label>
+            </div>
+            <div class="category-box">
+                <label><input type="checkbox" name="cardiac" id="cardiac"> Cardiac</label>
+                <label><input type="checkbox" name="firstaid" id="firstaid"> First Aid</label>
+            </div>
+            <div class="category-box" style="flex-direction: row; align-items: center;">
+                <label style="font-weight: bold; margin-right: 5px;">DOB:</label>
+                <input type="date" name="dob" style="flex: 1; border: none; font-size: 11px; outline: none;">
+            </div>
+        </div>
+        
+        <div style="border-bottom: 2px solid #000; padding: 3px 8px; display: flex; align-items: center;">
+            <label style="font-weight: bold; font-size: 11px; margin-right: 5px;">POC:</label>
+            <input type="text" name="poc" style="flex: 1; border: none; font-size: 11px; outline: none;">
+        </div>
+        
+        <!-- Chief Complaint -->
+        <div class="complaint-row">
+            <label>Chief complaint:</label>
+            <input type="text" name="chief_complaint">
+        </div>
+        
+        <!-- NOI / MOI -->
+        <div class="noi-row">
+            <label>*NOI / MOI:</label>
+            <input type="text" name="noi_moi" style="width: calc(100% - 100px); border: none; border-bottom: 1px solid #999;">
+        </div>
+        
+        <!-- S/S Row -->
+        <div style="border-bottom: 2px solid #000; padding: 3px 8px; display: flex; align-items: center;">
+            <label style="font-weight: bold; font-size: 11px; margin-right: 10px; white-space: nowrap;">S / S:</label>
+            <input type="text" name="ss" style="flex: 1; border: none; padding: 2px; font-size: 11px; outline: none;">
+        </div>
+        
+        <!-- Assessment Table -->
+        <table class="assessment-table">
+            <thead>
+                <tr>
+                    <th rowspan="2" style="writing-mode: vertical-rl; transform: rotate(180deg); width: 20px; padding: 4px 2px;">A<br>B<br>C</th>
+                    <th>Patent</th>
+                    <th>NPA</th>
+                    <th>OPA</th>
+                    <th>Advanced Airway</th>
+                    <th>Glasgow</th>
+                    <th>Eye:</th>
+                    <th>Verbal:</th>
+                    <th>Motor:</th>
+                    <th>Total</th>
+                </tr>
+                <tr>
+                    <th>O2</th>
+                    <th>Canula</th>
+                    <th>NRB</th>
+                    <th>BVM</th>
+                    <th>Coma<br>Scale:</th>
+                    <th>4 3 2 1</th>
+                    <th>5 4 3 2 1</th>
+                    <th>6 5 4 3 2 1</th>
+                    <th>(E+V+M):</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td rowspan="5" style="writing-mode: vertical-rl; transform: rotate(180deg); padding: 4px 2px; font-weight: bold;">Patient Assessment Findings</td>
+                    <td class="label-col">Radial</td>
+                    <td class="label-col">Carotid</td>
+                    <td class="label-col">Skin Moisture</td>
+                    <td class="label-col">Color</td>
+                    <td class="label-col">Respiratory</td>
+                    <td colspan="2" class="label-col">Pulse</td>
+                    <td colspan="2" class="label-col">Pupils</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="label-col">Speech</td>
+                    <td></td>
+                    <td class="label-col">Normal</td>
+                    <td class="label-col">Normal</td>
+                    <td class="label-col">Clear</td>
+                    <td colspan="2" class="label-col">Normal</td>
+                    <td colspan="2" class="label-col">Equal</td>
+                    <td>L / R</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Coherent</td>
+                    <td></td>
+                    <td class="label-col">Dry</td>
+                    <td class="label-col">Pale</td>
+                    <td class="label-col">Wet</td>
+                    <td>L / R</td>
+                    <td class="label-col">Rapid</td>
+                    <td colspan="2" class="label-col">Dilated</td>
+                    <td>L / R</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Incoherent</td>
+                    <td></td>
+                    <td class="label-col">Moist / Clammy</td>
+                    <td class="label-col">Bluish</td>
+                    <td class="label-col">Decreased</td>
+                    <td>L / R</td>
+                    <td class="label-col">Weak/Slow</td>
+                    <td colspan="2" class="label-col">Equal</td>
+                    <td>L / R</td>
+                </tr>
+                <tr>
+                    <td class="label-col">*Slurred*</td>
+                    <td class="label-col">Silent</td>
+                    <td class="label-col">Profuse Sweating</td>
+                    <td class="label-col">Flushed / Red</td>
+                    <td class="label-col">Absent</td>
+                    <td></td>
+                    <td class="label-col">Absent</td>
+                    <td colspan="2" class="label-col">Unequal</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Vitals Table -->
+        <table class="vitals-table">
+            <thead>
+                <tr>
+                    <th colspan="8" style="text-align: left; padding: 3px 8px; font-size: 11px; background: white; border-bottom: 1px solid #000;">Vitals</th>
+                </tr>
+                <tr>
+                    <th>Time</th>
+                    <th>LOC / AVPU</th>
+                    <th>Pulse</th>
+                    <th>BP</th>
+                    <th>RR / Quality</th>
+                    <th>O2 Saturation</th>
+                    <th>BGL</th>
+                    <th>Pain</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="time1"></td>
+                    <td><input type="text" name="loc1"></td>
+                    <td><input type="text" name="pulse1"></td>
+                    <td><input type="text" name="bp1"></td>
+                    <td><input type="text" name="rr1"></td>
+                    <td><input type="text" name="o2sat1"></td>
+                    <td><input type="text" name="bgl1"></td>
+                    <td><input type="text" name="pain1"></td>
+                </tr>
+                <tr>
+                    <td><input type="text" name="time2"></td>
+                    <td><input type="text" name="loc2"></td>
+                    <td><input type="text" name="pulse2"></td>
+                    <td><input type="text" name="bp2"></td>
+                    <td><input type="text" name="rr2"></td>
+                    <td><input type="text" name="o2sat2"></td>
+                    <td><input type="text" name="bgl2"></td>
+                    <td><input type="text" name="pain2"></td>
+                </tr>
+                <tr>
+                    <td><input type="text" name="time3"></td>
+                    <td><input type="text" name="loc3"></td>
+                    <td><input type="text" name="pulse3"></td>
+                    <td><input type="text" name="bp3"></td>
+                    <td><input type="text" name="rr3"></td>
+                    <td><input type="text" name="o2sat3"></td>
+                    <td><input type="text" name="bgl3"></td>
+                    <td><input type="text" name="pain3"></td>
+                </tr>
+                <tr>
+                    <td><input type="text" name="time4"></td>
+                    <td><input type="text" name="loc4"></td>
+                    <td><input type="text" name="pulse4"></td>
+                    <td><input type="text" name="bp4"></td>
+                    <td><input type="text" name="rr4"></td>
+                    <td><input type="text" name="o2sat4"></td>
+                    <td><input type="text" name="bgl4"></td>
+                    <td><input type="text" name="pain4"></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- Bottom Section -->
+        <div class="bottom-section">
+            <!-- Body Diagram -->
+            <div class="body-diagram">
+                <svg width="300" height="500" viewBox="0 0 300 500">
+                    <!-- Front view -->
+                    <ellipse cx="70" cy="40" rx="25" ry="30" fill="none" stroke="black" stroke-width="1.5"/>
+                    <line x1="70" y1="70" x2="70" y2="200" stroke="black" stroke-width="1.5"/>
+                    <line x1="70" y1="90" x2="30" y2="130" stroke="black" stroke-width="1.5"/>
+                    <line x1="30" y1="130" x2="20" y2="180" stroke="black" stroke-width="1.5"/>
+                    <line x1="70" y1="90" x2="110" y2="130" stroke="black" stroke-width="1.5"/>
+                    <line x1="110" y1="130" x2="120" y2="180" stroke="black" stroke-width="1.5"/>
+                    <line x1="70" y1="200" x2="45" y2="300" stroke="black" stroke-width="1.5"/>
+                    <line x1="45" y1="300" x2="40" y2="380" stroke="black" stroke-width="1.5"/>
+                    <line x1="40" y1="380" x2="35" y2="480" stroke="black" stroke-width="1.5"/>
+                    <line x1="70" y1="200" x2="95" y2="300" stroke="black" stroke-width="1.5"/>
+                    <line x1="95" y1="300" x2="100" y2="380" stroke="black" stroke-width="1.5"/>
+                    <line x1="100" y1="380" x2="105" y2="480" stroke="black" stroke-width="1.5"/>
+                    
+                    <!-- Back view -->
+                    <ellipse cx="230" cy="40" rx="25" ry="30" fill="none" stroke="black" stroke-width="1.5"/>
+                    <line x1="230" y1="70" x2="230" y2="200" stroke="black" stroke-width="1.5"/>
+                    <line x1="230" y1="90" x2="190" y2="130" stroke="black" stroke-width="1.5"/>
+                    <line x1="190" y1="130" x2="180" y2="180" stroke="black" stroke-width="1.5"/>
+                    <line x1="230" y1="90" x2="270" y2="130" stroke="black" stroke-width="1.5"/>
+                    <line x1="270" y1="130" x2="280" y2="180" stroke="black" stroke-width="1.5"/>
+                    <line x1="230" y1="200" x2="205" y2="300" stroke="black" stroke-width="1.5"/>
+                    <line x1="205" y1="300" x2="200" y2="380" stroke="black" stroke-width="1.5"/>
+                    <line x1="200" y1="380" x2="195" y2="480" stroke="black" stroke-width="1.5"/>
+                    <line x1="230" y1="200" x2="255" y2="300" stroke="black" stroke-width="1.5"/>
+                    <line x1="255" y1="300" x2="260" y2="380" stroke="black" stroke-width="1.5"/>
+                    <line x1="260" y1="380" x2="265" y2="480" stroke="black" stroke-width="1.5"/>
+                </svg>
+            </div>
+            
+            <!-- Right Section -->
+            <div class="right-section">
+                <!-- Loss of Consciousness -->
+                <div class="consciousness-box">
+                    <div>
+                        <label>Loss of Consciousness:</label>
+                    </div>
+                    <div style="display: flex; gap: 15px;">
+                        <label><input type="checkbox" name="loc_no"> No</label>
+                        <label><input type="checkbox" name="loc_yes"> Yes</label>
+                        <span style="margin-left: 10px;">Minutes: <input type="text" name="loc_minutes" style="width: 60px; border: none; border-bottom: 1px solid #999;"></span>
+                    </div>
+                </div>
+                
+                <!-- Medications Table -->
+                <div class="medications-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th colspan="4">Medications:</th>
+                            </tr>
+                            <tr>
+                                <th>Time</th>
+                                <th>Medication</th>
+                                <th>Route</th>
+                                <th>Response</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="text" name="med_time1"></td>
+                                <td><input type="text" name="medication1"></td>
+                                <td><input type="text" name="route1"></td>
+                                <td><input type="text" name="response1"></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" name="med_time2"></td>
+                                <td><input type="text" name="medication2"></td>
+                                <td><input type="text" name="route2"></td>
+                                <td><input type="text" name="response2"></td>
+                            </tr>
+                            <tr>
+                                <td><input type="text" name="med_time3"></td>
+                                <td><input type="text" name="medication3"></td>
+                                <td><input type="text" name="route3"></td>
+                                <td><input type="text" name="response3"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Waiver Section -->
+                <div class="waiver-section">
+                    <h3>Waiver of Treatment / Patient Refusal</h3>
+                    <p>
+                        I acknowledge that the EMS provider has informed that my medical condition requires 
+                        immediate treatment and/or transport to a physician and that with refusing 
+                        further medical or medical treatment there is a risk of serious injury, illness, or 
+                        death and I hereby refuse such treatment and/or transport and release EMS 
+                        personnel, their home agency, and their advising physician from all 
+                        responsibility regarding any ill effects which may result from this decision.
+                    </p>
+                    <div class="signature-row">
+                        <div class="signature-field">
+                            <label>Patient Signature:</label>
+                            <input type="text" name="patient_signature">
+                            <label style="margin-top: 5px;">Date:</label>
+                            <input type="date" name="patient_sig_date">
+                        </div>
+                        <div class="signature-field">
+                            <label>Witness Signature:</label>
+                            <input type="text" name="witness_signature">
+                            <label style="margin-top: 5px;">Date:</label>
+                            <input type="date" name="witness_sig_date">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Transfer of Care -->
+                <div class="transfer-section">
+                    <h3>Transfer of Care</h3>
+                    <div class="transfer-options">
+                        <label><input type="checkbox" name="hospital_ed"> Hospital ED</label>
+                        <label><input type="checkbox" name="als_medical"> ALS - Medical</label>
+                        <label><input type="checkbox" name="als_ground"> ALS - Ground</label>
+                        <label><input type="checkbox" name="bls"> BLS</label>
+                        <label><input type="checkbox" name="als_air"> ALS - Air</label>
+                        <label>
+                            <input type="checkbox" name="other_transfer"> Other (Specify): 
+                            <input type="text" name="other_specify" style="width: 100px; border: none; border-bottom: 1px solid #999; margin-left: 5px;">
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 8px; font-size: 9px;">
+                        <label style="font-weight: bold; display: block; margin-bottom: 2px;">Receiving Signature:</label>
+                        <input type="text" name="receiving_signature" style="width: 100%; border: none; border-bottom: 1px solid #000; padding: 1px; font-size: 9px; outline: none;">
+                        <label style="font-weight: bold; display: block; margin-bottom: 2px; margin-top: 4px;">Date:</label>
+                        <input type="date" name="receiving_date" style="width: 100%; border: none; border-bottom: 1px solid #000; padding: 1px; font-size: 9px; outline: none;">
+                    </div>
+                    <div class="ems-signatures">
+                        <div class="ems-signature">
+                            <label>EMS Provider Signature:</label>
+                            <input type="text" name="ems_provider_signature">
+                            <label style="margin-top: 4px;">Date:</label>
+                            <input type="date" name="ems_provider_date">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
