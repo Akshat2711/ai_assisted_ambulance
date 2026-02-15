@@ -131,13 +131,24 @@ const RecorderBar = () => {
       setLoading(true);
       const response = await createReport(transcript);
 
-      setReportData((prev: any) => ({
-        ...prev,
+      const newReportData = {
         ...response.patient_data,
         abc_assessment: response.abc_assessment,
         patient_signs: response.patient_signs,
-        date: new Date().toISOString().split("T")[0]
+        date: new Date().toISOString().split("T")[0],
+        created_at: new Date().toISOString()
+      };
+
+      setReportData((prev: any) => ({
+        ...prev,
+        ...newReportData
       }));
+
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('latestPatientReport', JSON.stringify(newReportData));
+        console.log('Report saved to localStorage:', newReportData);
+      }
 
       setView("report");
 
