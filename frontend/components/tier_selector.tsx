@@ -27,9 +27,9 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 const tiers = [
-  { id: 1, label: 'Tier 1', level: 'primary', color: 'bg-blue-500', description: 'Primary Care • Basic Emergency' },
+  { id: 1, label: 'Tier 3', level: 'primary', color: 'bg-blue-500', description: 'Primary Care • Basic Emergency' },
   { id: 2, label: 'Tier 2', level: 'secondary', color: 'bg-purple-500', description: 'Multi-specialty • Diagnostics' },
-  { id: 3, label: 'Tier 3', level: 'tertiary', color: 'bg-emerald-500', description: 'Super-specialty • ICU & Trauma' },
+  { id: 3, label: 'Tier 1', level: 'tertiary', color: 'bg-emerald-500', description: 'Super-specialty • ICU & Trauma' },
 ];
 
 const hospitals = [
