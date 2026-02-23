@@ -13,6 +13,7 @@ import {
   AlertCircle,
   MapPin,
   Activity,
+  Upload,
   Eye
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -58,12 +59,84 @@ const HospitalDetailView: React.FC<HospitalDetailViewProps> = ({
   const [message, setMessage] = useState('');
   const [savedReport, setSavedReport] = useState<any>(null);
   const [showReportPreview, setShowReportPreview] = useState(false);
-  const [bedData, setBedData] = useState({
-    general: Math.floor(Math.random() * 15) + 5,
-    icu: Math.floor(Math.random() * 8) + 2,
-    emergency: Math.floor(Math.random() * 10) + 3
-  });
+  const [uploadedFiles, setUploadedFiles] = useState<{
+  [key: string]: File | null;
+}>({
+  doc1: null,
+  doc2: null,
+  doc3: null,
+  doc4: null
+});
+const handleFileUpload = (key: string, file: File | null) => {
+  if (!file) return;
 
+  const fileUrl = URL.createObjectURL(file);
+
+  setUploadedFiles(prev => ({
+    ...prev,
+    [key]: file
+  }));
+
+  setChatFiles(prev => [
+    ...prev,
+    {
+      name: file.name,
+      url: fileUrl
+    }
+  ]);
+
+  // ✅ Simulated hospital feedback after 2 seconds
+  setTimeout(() => {
+    setHospitalMessages(prev => [
+      ...prev,
+      `Document "${file.name}" received. Reviewing now.`
+    ]);
+  }, 2000);
+};
+const [chatFiles, setChatFiles] = useState<
+  { name: string; url: string }[]
+>([]);
+
+const renderPreview = (file: File | null) => {
+  if (!file) return null;
+
+  const url = URL.createObjectURL(file);
+
+  if (file.type.startsWith("image/")) {
+    return (
+      <img
+        src={url}
+        alt="preview"
+        className="mt-2 h-20 w-full object-contain rounded-lg border border-white/10"
+      />
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-400 text-xs mt-2 block underline"
+    >
+      View Report
+    </a>
+  );
+};
+  const [bedData, setBedData] = useState({
+  general: 10,
+  icu: 5,
+  emergency: 8
+});
+useEffect(() => {
+  const savedBeds = localStorage.getItem("hospitalBeds");
+  if (savedBeds) {
+    setBedData(JSON.parse(savedBeds));
+  }
+}, []);
+const [hospitalMessages, setHospitalMessages] = useState<string[]>([
+  "We're ready for your arrival. Emergency bay 3 is prepared."
+]);
   // Load saved report from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -80,15 +153,27 @@ const HospitalDetailView: React.FC<HospitalDetailViewProps> = ({
 
   // Simulate bed availability updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      setBedData({
-        general: Math.floor(Math.random() * 15) + 5,
-        icu: Math.floor(Math.random() * 8) + 2,
-        emergency: Math.floor(Math.random() * 10) + 3
-      });
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
+  const interval = setInterval(() => {
+    setBedData(prev => {
+      const fluctuate = (value: number) => {
+        const change = Math.floor(Math.random() * 3) - 1; // -1, 0, or +1
+        const newValue = value + change;
+        return newValue < 0 ? 0 : newValue;
+      };
+
+      const updated = {
+        general: fluctuate(prev.general),
+        icu: fluctuate(prev.icu),
+        emergency: fluctuate(prev.emergency)
+      };
+
+      localStorage.setItem("hospitalBeds", JSON.stringify(updated));
+      return updated;
+    });
+  }, 120000); // 2 minutes
+
+  return () => clearInterval(interval);
+}, []);
 
   const handleSendReport = () => {
     setReportSent(true);
@@ -330,6 +415,42 @@ const HospitalDetailView: React.FC<HospitalDetailViewProps> = ({
                 This report will be sent directly to the hospital's emergency department. Ensure all information is accurate.
               </p>
             </div>
+            {/* ✅ Document Upload Section With Circular Static Logos */}
+<div className="grid grid-cols-2 gap-6">
+  {Object.keys(uploadedFiles).map((key, index) => (
+    <div
+      key={key}
+      className="p-6 bg-zinc-900/40 border border-white/5 rounded-2xl flex flex-col items-center"
+    >
+      {/* Circular Logo */}
+      <div className="h-20 w-20 mb-4 rounded-full overflow-hidden border-2 border-white/20 shadow-md">
+        <img
+          src={`/logo${index + 1}.jpg`}
+          alt="Document Logo"
+          className="h-full w-full object-cover"
+        />
+      </div>
+
+      {/* Upload File Button */}
+      <label className="w-full">
+        <input
+          type="file"
+          className="hidden"
+          onChange={(e) =>
+            handleFileUpload(key, e.target.files?.[0] || null)
+          }
+        />
+        <div className="cursor-pointer w-full py-3 bg-blue-600 rounded-xl text-center text-sm font-bold text-white flex items-center justify-center gap-2 hover:bg-blue-700 transition">
+          <Upload size={16} />
+          Upload
+        </div>
+      </label>
+
+      {/* File Preview */}
+      {renderPreview(uploadedFiles[key])}
+    </div>
+  ))}
+</div>
           </div>
         )}
 
@@ -349,22 +470,60 @@ const HospitalDetailView: React.FC<HospitalDetailViewProps> = ({
 
                 {/* Mock message history */}
                 <div className="space-y-3 mb-4 min-h-[200px]">
-                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl rounded-tl-none">
-                    <div className="text-[10px] text-blue-400 font-bold mb-1">Emergency Dept • 2m ago</div>
-                    <div className="text-sm text-white">We're ready for your arrival. Emergency bay 3 is prepared.</div>
-                  </div>
-                  
-                  {messageSent && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl rounded-tr-none ml-auto max-w-[80%]"
-                    >
-                      <div className="text-[10px] text-emerald-400 font-bold mb-1">You • Just now</div>
-                      <div className="text-sm text-white">Message delivered</div>
-                    </motion.div>
-                  )}
-                </div>
+
+  {/* Hospital Messages */}
+{/* First Hospital Message */}
+{hospitalMessages.length > 0 && (
+  <div
+    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl rounded-tl-none max-w-[80%]"
+  >
+    <div className="text-[10px] text-blue-400 font-bold mb-1">
+      Emergency Dept
+    </div>
+    <div className="text-sm text-white">
+      {hospitalMessages[0]}
+    </div>
+  </div>
+)}
+
+  {/* Uploaded Documents as User Messages */}
+  {chatFiles.map((file, index) => (
+    <motion.div
+      key={index}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="ml-auto p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl rounded-tr-none max-w-[80%]"
+    >
+      <div className="text-[10px] text-emerald-400 font-bold mb-1">
+        You • Document
+      </div>
+
+      <a
+        href={file.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-white underline break-all"
+      >
+        {file.name}
+      </a>
+    </motion.div>
+  ))}
+  {/* Hospital Follow-up Messages */}
+{hospitalMessages.slice(1).map((msg, index) => (
+  <div
+    key={index}
+    className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl rounded-tl-none max-w-[80%]"
+  >
+    <div className="text-[10px] text-blue-400 font-bold mb-1">
+      Emergency Dept
+    </div>
+    <div className="text-sm text-white">
+      {msg}
+    </div>
+  </div>
+))}
+
+</div>
               </div>
 
               <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex gap-3">
